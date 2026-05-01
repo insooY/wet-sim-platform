@@ -125,10 +125,12 @@ class SimValve(IValve):
             self._command_open = None
 
     def open(self) -> None:
+        self._update()  # 대기 중인 전이를 먼저 반영
         self._command_open = True
         self._command_time = time.monotonic()
 
     def close(self) -> None:
+        self._update()  # 대기 중인 전이를 먼저 반영
         self._command_open = False
         self._command_time = time.monotonic()
 
