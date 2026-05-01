@@ -1,0 +1,63 @@
+recipe:
+  name: "SC1 Clean"
+  description: "암모니아과산화수소(SC1) 스프레이 세정 — 파티클/유기물 제거"
+  chemistry: SC1
+  wafer_size: 300mm
+
+steps:
+  - name: "Heater Warmup"
+    heater_setpoints:
+      - id: H1
+        temperature: 70.0
+    wait_heater:
+      - id: H1
+        tolerance: 1.0
+    duration: 0
+
+  - name: "Nozzle Position"
+    motor_moves:
+      - id: M2
+        position: 250.0
+    duration: 0
+
+  - name: "SC1 Spray"
+    valves_open: [V1]
+    motor_moves:
+      - id: M1
+        position: 360.0
+    duration: 60
+
+  - name: "SC1 Spray Continue"
+    valves_open: [V1]
+    motor_moves:
+      - id: M1
+        position: 0.0
+    duration: 60
+
+  - name: "SC1 Off"
+    valves_close: [V1]
+    duration: 2
+
+  - name: "DIW Rinse"
+    valves_open: [V3]
+    duration: 30
+
+  - name: "DIW Off"
+    valves_close: [V3]
+    duration: 2
+
+  - name: "N2 Dry"
+    valves_open: [V4]
+    duration: 20
+
+  - name: "N2 Off / Home"
+    valves_close: [V4]
+    motor_moves:
+      - id: M2
+        position: 0.0
+      - id: M1
+        position: 0.0
+    heater_setpoints:
+      - id: H1
+        temperature: 25.0
+    duration: 0
