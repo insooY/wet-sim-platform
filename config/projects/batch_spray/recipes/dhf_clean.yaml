@@ -1,0 +1,55 @@
+recipe:
+  name: "DHF Clean"
+  description: "묽은 불산(DHF) 스프레이 세정 — 자연산화막 제거"
+  chemistry: DHF
+  wafer_size: 300mm
+
+steps:
+  - name: "Nozzle Position"
+    motor_moves:
+      - id: M2
+        position: 250.0
+    duration: 0
+
+  - name: "DHF Spray"
+    valves_open: [V2]
+    motor_moves:
+      - id: M1
+        position: 360.0
+    duration: 30
+
+  - name: "DHF Spray Continue"
+    valves_open: [V2]
+    motor_moves:
+      - id: M1
+        position: 0.0
+    duration: 30
+
+  - name: "DHF Off"
+    valves_close: [V2]
+    duration: 2
+
+  - name: "DIW Rinse 1"
+    valves_open: [V3]
+    duration: 30
+
+  - name: "DIW Rinse 2"
+    valves_open: [V3]
+    duration: 30
+
+  - name: "DIW Off"
+    valves_close: [V3]
+    duration: 2
+
+  - name: "N2 Dry"
+    valves_open: [V4]
+    duration: 20
+
+  - name: "N2 Off / Home"
+    valves_close: [V4]
+    motor_moves:
+      - id: M2
+        position: 0.0
+      - id: M1
+        position: 0.0
+    duration: 0
