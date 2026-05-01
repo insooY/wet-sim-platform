@@ -1,0 +1,82 @@
+equipment:
+  name: "Batch Spray Cleaner"
+  type: batch_spray
+  wafer_size: 300mm
+  cassette_slots: 25
+  loadports: 1
+
+motors:
+  - id: M1
+    name: "Turntable"
+    type: servo
+    range: [0, 360]
+    max_speed: 30.0        # rpm
+    accel: 10.0
+    simulation: {}
+
+  - id: M2
+    name: "Nozzle Arm"
+    type: servo
+    range: [0, 500]        # mm (홈 → 최대 스윙 위치)
+    max_speed: 100.0
+    accel: 50.0
+    simulation: {}
+
+valves:
+  - id: V1
+    name: "SC1 Supply"
+    type: pneumatic
+    response_ms: 200
+
+  - id: V2
+    name: "DHF Supply"
+    type: pneumatic
+    response_ms: 200
+
+  - id: V3
+    name: "DIW Rinse"
+    type: pneumatic
+    response_ms: 150
+
+  - id: V4
+    name: "N2 Dry"
+    type: pneumatic
+    response_ms: 100
+
+sensors:
+  - id: S1
+    name: "Chamber Temperature"
+    type: temperature
+    unit: "°C"
+    range: [15, 90]
+    initial_value: 23.0
+    simulation:
+      noise: 0.2
+      response_tau: 8.0
+
+  - id: S2
+    name: "SC1 Flow Rate"
+    type: flow
+    unit: "L/min"
+    range: [0, 10]
+    initial_value: 0.0
+    simulation:
+      noise: 0.05
+      response_tau: 1.0
+
+  - id: S3
+    name: "Chamber Pressure"
+    type: pressure
+    unit: "kPa"
+    range: [90, 120]
+    initial_value: 101.3
+    simulation:
+      noise: 0.1
+      response_tau: 2.0
+
+heaters:
+  - id: H1
+    name: "SC1 Heater"
+    power_kw: 5.0
+    target_range: [20, 80]
+    tau: 25.0
