@@ -1,0 +1,63 @@
+chemicals:
+  SPM:
+    formula: "H2SO4:H2O2=4:1"
+    temp_range: [100, 150]
+    color: "#ff6b35"
+    hazard: high
+    description: "황산과산화수소 혼합물 — 유기물 제거"
+
+  SC1:
+    formula: "NH4OH:H2O2:H2O=1:1:5"
+    temp_range: [60, 80]
+    color: "#ab47bc"
+    hazard: medium
+    description: "암모니아과산화수소 혼합물 — 파티클/유기물 제거"
+
+  SC2:
+    formula: "HCl:H2O2:H2O=1:1:6"
+    temp_range: [60, 80]
+    color: "#42a5f5"
+    hazard: medium
+    description: "염산과산화수소 혼합물 — 금속 오염 제거"
+
+  DHF:
+    formula: "HF:H2O=1:100"
+    temp_range: [20, 25]
+    color: "#ffa726"
+    hazard: high
+    description: "묽은 불산 — 산화막 제거"
+
+  BHF:
+    formula: "NH4F:HF=6:1"
+    temp_range: [20, 25]
+    color: "#ffb74d"
+    hazard: high
+    description: "완충 불산 — 산화막 식각 (완충 성분으로 식각 속도 안정)"
+
+  DIW:
+    formula: "H2O (18.2MΩ·cm)"
+    temp_range: [20, 85]
+    color: "#4fc3f7"
+    hazard: low
+    description: "초순수 — 린스"
+
+  IPA:
+    formula: "C3H8O"
+    temp_range: [20, 82]
+    color: "#fff59d"
+    hazard: medium
+    description: "이소프로필알코올 — 건조/마란고니 건조"
+
+  ozone:
+    formula: "O3/H2O (20-80ppm)"
+    temp_range: [20, 25]
+    color: "#b2ff59"
+    hazard: medium
+    description: "오존수 — 유기물 산화 제거"
+
+  H3PO4:
+    formula: "H3PO4 (85%)"
+    temp_range: [150, 180]
+    color: "#e57373"
+    hazard: high
+    description: "인산 — 질화막(Si3N4) 선택 식각"
