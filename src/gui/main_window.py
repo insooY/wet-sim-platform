@@ -1,0 +1,127 @@
+from PyQt6.QtCore import QTimer
+from PyQt6.QtWidgets import QHBoxLayout, QMainWindow, QScrollArea, QVBoxLayout, QWidget
+
+from src.config.config_loader import ConfigLoader
+from src.core.equipment_manager import EquipmentManager
+from src.core.fsm import EquipmentState
+from src.gui.panels.control_panel import ControlPanel
+from src.gui.panels.sensor_panel import SensorPanel
+from src.gui.panels.sequence_panel import SequencePanel
+from src.hal.hal_manager import HALManager
+
+
+class MainWindow(QMainWindow):
+    """메인 윈도우 — 좌측 빈 3D 영역 + 우측 컨트롤/센서/시퀀스 패널."""
+
+    def __init__(self, project_name: str = "batch_spray") -> None:
+        super().__init__()
+        self.setWindowTitle("Wet Process Simulator")
+        self.resize(1280, 800)
+
+        self._loader = ConfigLoader()
+        self._hal = HALManager()
+        self._equipment: EquipmentManager | None = None
+        self._recipes: list[dict] = []
+
+        self._setup_hal(project_name)
+        self._build_ui()
+        self._connect_signals()
+        self._start_timers()
+
+    # ── 초기화 ────────────────────────────────────────────────────────────────
+
+    def _setup_hal(self, project_name: str) -> None:
+        equipment_cfg = self._loader.load_equipment(project_name)
+        self._hal.load_from_config(equipment_cfg)
+        self._recipes = self._loader.load_all_recipes(project_name)
+        self._equipment = EquipmentManager(self._hal)
+        self._equipment.add_state_listener(self._on_state_change)
+        self._equipment.set_step_callback(self._on_step_change)
+
+    def _build_ui(self) -> None:
+        central = QWidget()
+        self.setCentralWidget(central)
+        root = QHBoxLayout(central)
+        root.setContentsMargins(8, 8, 8, 8)
+        root.setSpacing(8)
+
+        # 좌측 — 3D 뷰 플레이스홀더 (Phase 2에서 VTK로 교체)
+        placeholder = QWidget()
+        placeholder.setObjectName("ViewPlaceholder")
+        placeholder.setMinimumWidth(800)
+        root.addWidget(placeholder, stretch=3)
+
+        # 우측 패널
+        right_panel = QWidget()
+        right_panel.setFixedWidth(300)
+        right_layout = QVBoxLayout(right_panel)
+        right_layout.setContentsMargins(0, 0, 0, 0)
+        right_layout.setSpacing(8)
+
+        self._ctrl_panel = ControlPanel()
+        self._ctrl_panel.set_recipes([r["recipe"]["name"] for r in self._recipes])
+        right_layout.addWidget(self._ctrl_panel)
+
+        self._seq_panel = SequencePanel()
+        right_layout.addWidget(self._seq_panel)
+
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        self._sensor_panel = SensorPanel()
+        self._sensor_panel.load_hal(self._hal)
+        scroll.setWidget(self._sensor_panel)
+        right_layout.addWidget(scroll, stretch=1)
+
+        root.addWidget(right_panel, stretch=1)
+
+    def _connect_signals(self) -> None:
+        self._ctrl_panel.sig_init.connect(self._on_init)
+        self._ctrl_panel.sig_start.connect(self._on_start)
+        self._ctrl_panel.sig_stop.connect(self._on_stop)
+        self._ctrl_panel.sig_estop.connect(self._on_estop)
+
+    def _start_timers(self) -> None:
+        # 장비 tick (100 ms)
+        self._tick_timer = QTimer(self)
+        self._tick_timer.timeout.connect(self._on_tick)
+        self._tick_timer.start(100)
+
+        # UI 갱신 (500 ms)
+        self._ui_timer = QTimer(self)
+        self._ui_timer.timeout.connect(self._sensor_panel.refresh)
+        self._ui_timer.start(500)
+
+    # ── 슬롯 ─────────────────────────────────────────────────────────────────
+
+    def _on_tick(self) -> None:
+        if self._equipment:
+            self._equipment.tick()
+
+    def _on_init(self) -> None:
+        if self._equipment:
+            self._equipment.initialize()
+
+    def _on_start(self, recipe_name: str) -> None:
+        if not self._equipment:
+            return
+        recipe = next((r for r in self._recipes if r["recipe"]["name"] == recipe_name), None)
+        if recipe:
+            self._seq_panel.set_recipe_name(recipe_name)
+            self._equipment.start_recipe(recipe["recipe"] if "recipe" in recipe else recipe)
+
+    def _on_stop(self) -> None:
+        if self._equipment:
+            self._equipment.abort()
+            self._seq_panel.reset()
+
+    def _on_estop(self) -> None:
+        if self._equipment:
+            self._equipment.emergency_stop()
+            self._seq_panel.reset()
+
+    def _on_state_change(self, old: EquipmentState, new: EquipmentState) -> None:
+        self._ctrl_panel.update_state(new)
+
+    def _on_step_change(self, index: int, name: str) -> None:
+        current, total = self._equipment.recipe_progress
+        self._seq_panel.update_progress(current, total, name)
