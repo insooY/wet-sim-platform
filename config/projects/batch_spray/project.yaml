@@ -1,0 +1,10 @@
+project:
+  name: "Batch Spray Cleaner"
+  description: "턴테이블 + 카세트(25 wafers) + 스프레이 노즐 매니폴드 세정 장비"
+  equipment_type: batch_spray
+  config_version: "1.0"
+
+equipment_config: equipment.yaml
+recipes:
+  - recipes/sc1_clean.yaml
+  - recipes/dhf_clean.yaml
