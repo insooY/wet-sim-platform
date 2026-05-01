@@ -1,0 +1,48 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+*.spec
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# PyInstaller
+*.exe
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs & DB
+*.log
+*.db
+*.sqlite
+*.sqlite3
+
+# Config secrets
+config/local_*.yaml
+config/secrets.yaml
+
+# Test artifacts
+.pytest_cache/
+.coverage
+htmlcov/
+
+# VTK cache
+*.vtkjs
