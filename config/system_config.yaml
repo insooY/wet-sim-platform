@@ -1,0 +1,19 @@
+system:
+  name: "Wet Process Simulator"
+  version: "0.1.0"
+
+tick_interval_ms: 100          # EquipmentManager.tick() 호출 주기
+
+zmq:
+  pub_port: 5555               # 시뮬레이터 → 외부 GUI 발행 포트
+  sub_port: 5556               # 외부 GUI → 시뮬레이터 수신 포트
+  heartbeat_interval_ms: 1000
+  heartbeat_timeout_ms: 3000
+
+logging:
+  level: INFO
+  dir: logs/
+
+database:
+  type: sqlite
+  path: data/sim.db
