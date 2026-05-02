@@ -97,10 +97,11 @@ class MainWindow(QMainWindow):
 
     def showEvent(self, event) -> None:
         super().showEvent(event)
-        QTimer.singleShot(100, self._init_3d)
+        self._scene.Initialize()          # VTK 초기화 — 윈도우가 표시된 직후 동기 호출
+        QTimer.singleShot(50, self._init_3d)
 
     def _init_3d(self) -> None:
-        self._scene.initialize()
+        self._scene.GetRenderWindow().Render()  # 빈 화면 먼저 렌더
         self._eq_model = BatchSprayModel(self._scene)
         self._anim_mgr = AnimationManager(self._scene.render)
         self._anim_turntable = RotateAnimation(

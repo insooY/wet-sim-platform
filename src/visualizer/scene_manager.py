@@ -26,8 +26,7 @@ class SceneManager(QVTKRenderWindowInteractor):
         self.GetRenderWindow().GetInteractor().SetInteractorStyle(style)
 
     def initialize(self) -> None:
-        """윈도우가 표시된 후 명시적으로 호출 — VTK Initialize + 첫 렌더."""
-        self.Initialize()
+        """첫 렌더 트리거 — showEvent에서 Initialize() 호출 후 사용."""
         self.GetRenderWindow().Render()
 
     def add_actor(self, name: str, actor: object) -> None:

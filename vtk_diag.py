@@ -84,7 +84,7 @@ ren.ResetCamera()
 rw.Render()
 p("  OK")
 
-p("STEP 14: app.exec() — 창을 닫으면 종료")
+p("STEP 14: app.exec() -- 창을 닫으면 종료")
 ret = app.exec()
 p(f"  종료 코드: {ret}")
 
