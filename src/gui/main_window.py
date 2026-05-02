@@ -13,6 +13,8 @@ from src.gui.panels.sequence_panel import SequencePanel
 from src.hal.hal_manager import HALManager
 from src.visualizer.scene_manager import SceneManager
 from src.visualizer.camera_control import CameraControl
+from src.visualizer.animation import AnimationManager, RotateAnimation, OscillateAnimation
+from src.visualizer.equipment_models.batch_spray import BatchSprayModel
 
 
 class MainWindow(QMainWindow):
@@ -95,6 +97,21 @@ class MainWindow(QMainWindow):
     def showEvent(self, event) -> None:
         super().showEvent(event)
         self._scene.initialize()
+        self._eq_model = BatchSprayModel(self._scene)
+        self._anim_mgr = AnimationManager(self._scene.render)
+        self._anim_turntable = RotateAnimation(
+            self._eq_model._actor_turntable,
+            axis=(0.0, 0.0, 1.0),
+            speed_deg_per_sec=36.0,   # 1 rpm
+        )
+        self._anim_arm = OscillateAnimation(
+            self._eq_model._actor_arm,
+            axis=(0.0, 0.0, 1.0),
+            amplitude_deg=40.0,
+            period_sec=6.0,
+        )
+        self._anim_mgr.add(self._anim_turntable)
+        self._anim_mgr.add(self._anim_arm)
         self._camera.set_isometric()
 
     def _connect_signals(self) -> None:
@@ -114,11 +131,20 @@ class MainWindow(QMainWindow):
         self._ui_timer.timeout.connect(self._sensor_panel.refresh)
         self._ui_timer.start(500)
 
+        # 3D 애니메이션 tick (33 ms ≈ 30 fps)
+        self._anim_timer = QTimer(self)
+        self._anim_timer.timeout.connect(self._on_anim_tick)
+        self._anim_timer.start(33)
+
     # ── 슬롯 ─────────────────────────────────────────────────────────────────
 
     def _on_tick(self) -> None:
         if self._equipment:
             self._equipment.tick()
+
+    def _on_anim_tick(self) -> None:
+        if hasattr(self, "_anim_mgr"):
+            self._anim_mgr.tick()
 
     def _on_init(self) -> None:
         if self._equipment:
@@ -144,6 +170,14 @@ class MainWindow(QMainWindow):
 
     def _on_state_change(self, old: EquipmentState, new: EquipmentState) -> None:
         self._ctrl_panel.update_state(new)
+        if not hasattr(self, "_anim_turntable"):
+            return
+        if new == EquipmentState.RUNNING:
+            self._anim_turntable.start()
+            self._anim_arm.start()
+        else:
+            self._anim_turntable.stop()
+            self._anim_arm.stop()
 
     def _on_step_change(self, index: int, name: str) -> None:
         current, total = self._equipment.recipe_progress
