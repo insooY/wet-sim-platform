@@ -36,7 +36,6 @@ class SceneManager(QWidget):
     def initialize(self) -> None:
         """MainWindow.show() 이후에 호출 — VTK 인터랙터를 초기화한다."""
         self._vtk_widget.Initialize()
-        self._vtk_widget.Start()
 
     def add_actor(self, name: str, actor: object) -> None:
         self._renderer.AddActor(actor)

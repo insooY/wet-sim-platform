@@ -97,6 +97,9 @@ class MainWindow(QMainWindow):
 
     def showEvent(self, event) -> None:
         super().showEvent(event)
+        QTimer.singleShot(100, self._init_3d)
+
+    def _init_3d(self) -> None:
         self._scene.initialize()
         self._eq_model = BatchSprayModel(self._scene)
         self._anim_mgr = AnimationManager(self._scene.render)
@@ -126,6 +129,7 @@ class MainWindow(QMainWindow):
             color=(0.3, 0.7, 1.0),    # DIW 파란색
             actor_name="spray_diw",
         )
+        self._scene.reset_camera()
         self._camera.set_isometric()
 
     def _connect_signals(self) -> None:
