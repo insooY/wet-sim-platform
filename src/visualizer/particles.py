@@ -56,6 +56,10 @@ class SprayParticleSystem:
 
         self._scene.add_actor(actor_name, self._actor)
 
+    @property
+    def is_active(self) -> bool:
+        return self._active
+
     def start(self) -> None:
         self._active = True
         self._last_tick = time.monotonic()

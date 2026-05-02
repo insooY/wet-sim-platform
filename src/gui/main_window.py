@@ -15,6 +15,7 @@ from src.visualizer.scene_manager import SceneManager
 from src.visualizer.camera_control import CameraControl
 from src.visualizer.animation import AnimationManager, RotateAnimation, OscillateAnimation
 from src.visualizer.equipment_models.batch_spray import BatchSprayModel
+from src.visualizer.particles import SprayParticleSystem
 
 
 class MainWindow(QMainWindow):
@@ -112,6 +113,19 @@ class MainWindow(QMainWindow):
         )
         self._anim_mgr.add(self._anim_turntable)
         self._anim_mgr.add(self._anim_arm)
+
+        # 노즐 팁 위치 (batch_spray 모델과 동일 좌표)
+        nozzle_positions = [(-40, y, 483) for y in range(-80, 81, 40)]
+        self._spray_sc1 = SprayParticleSystem(
+            self._scene, nozzle_positions,
+            color=(0.55, 0.2, 0.8),   # SC1 보라색
+            actor_name="spray_sc1",
+        )
+        self._spray_diw = SprayParticleSystem(
+            self._scene, nozzle_positions,
+            color=(0.3, 0.7, 1.0),    # DIW 파란색
+            actor_name="spray_diw",
+        )
         self._camera.set_isometric()
 
     def _connect_signals(self) -> None:
@@ -143,8 +157,33 @@ class MainWindow(QMainWindow):
             self._equipment.tick()
 
     def _on_anim_tick(self) -> None:
-        if hasattr(self, "_anim_mgr"):
-            self._anim_mgr.tick()
+        if not hasattr(self, "_anim_mgr"):
+            return
+        self._anim_mgr.tick()
+        self._update_particles()
+
+    def _update_particles(self) -> None:
+        """밸브 상태에 따라 파티클 시작/중지 및 tick."""
+        if not hasattr(self, "_spray_sc1"):
+            return
+        v1_open = self._hal.get_valve("V1").is_open()
+        v3_open = self._hal.get_valve("V3").is_open()
+
+        if v1_open:
+            if not self._spray_sc1.is_active:
+                self._spray_sc1.start()
+            self._spray_sc1.tick()
+        else:
+            if self._spray_sc1.is_active:
+                self._spray_sc1.stop()
+
+        if v3_open:
+            if not self._spray_diw.is_active:
+                self._spray_diw.start()
+            self._spray_diw.tick()
+        else:
+            if self._spray_diw.is_active:
+                self._spray_diw.stop()
 
     def _on_init(self) -> None:
         if self._equipment:
