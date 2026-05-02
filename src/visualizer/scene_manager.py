@@ -1,11 +1,11 @@
 from vtkmodules.qt.QVTKRenderWindowInteractor import QVTKRenderWindowInteractor
-from vtkmodules.vtkRenderingCore import vtkRenderer, vtkRenderWindow
+from vtkmodules.vtkRenderingCore import vtkRenderer
 from vtkmodules.vtkInteractionStyle import vtkInteractorStyleTrackballCamera
-from PyQt6.QtWidgets import QWidget, QVBoxLayout
+from PyQt6.QtWidgets import QWidget
 
 
-class SceneManager(QWidget):
-    """VTK 렌더러를 PyQt6 위젯에 임베딩하는 3D 씬 관리자."""
+class SceneManager(QVTKRenderWindowInteractor):
+    """VTK 렌더러를 PyQt6에 임베딩 — QVTKRenderWindowInteractor를 직접 상속."""
 
     BACKGROUND_TOP    = (0.12, 0.12, 0.18)
     BACKGROUND_BOTTOM = (0.05, 0.05, 0.08)
@@ -13,30 +13,29 @@ class SceneManager(QWidget):
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self._actors: dict[str, object] = {}
-        self._build_vtk()
+        self._initialized = False
+        self._setup_renderer()
 
-    def _build_vtk(self) -> None:
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
-
-        self._vtk_widget = QVTKRenderWindowInteractor(self)
-        layout.addWidget(self._vtk_widget)
-
+    def _setup_renderer(self) -> None:
         self._renderer = vtkRenderer()
         self._renderer.SetBackground2(*self.BACKGROUND_TOP)
         self._renderer.SetBackground(*self.BACKGROUND_BOTTOM)
         self._renderer.SetGradientBackground(True)
-
-        render_window: vtkRenderWindow = self._vtk_widget.GetRenderWindow()
-        render_window.AddRenderer(self._renderer)
+        self.GetRenderWindow().AddRenderer(self._renderer)
 
         style = vtkInteractorStyleTrackballCamera()
-        self._vtk_widget.GetRenderWindow().GetInteractor().SetInteractorStyle(style)
-        self._vtk_widget.Initialize()
+        self.GetRenderWindow().GetInteractor().SetInteractorStyle(style)
+
+    def showEvent(self, event) -> None:
+        super().showEvent(event)
+        if not self._initialized:
+            self._initialized = True
+            self.Initialize()
+            self.GetRenderWindow().Render()
 
     def initialize(self) -> None:
-        """show() 이후 명시적 렌더 트리거."""
-        self._vtk_widget.GetRenderWindow().Render()
+        """외부에서 강제 렌더 트리거용."""
+        self.GetRenderWindow().Render()
 
     def add_actor(self, name: str, actor: object) -> None:
         self._renderer.AddActor(actor)
@@ -51,7 +50,7 @@ class SceneManager(QWidget):
         return self._actors.get(name)
 
     def render(self) -> None:
-        self._vtk_widget.GetRenderWindow().Render()
+        self.GetRenderWindow().Render()
 
     def reset_camera(self) -> None:
         self._renderer.ResetCamera()
