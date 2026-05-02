@@ -132,3 +132,48 @@ class BatchSprayModel:
             z = 50 + slot_h * (i + 1)
             actor_slot.SetPosition(0, 0, z)
             self._scene.add_actor(f"cassette_slot_{i}", actor_slot)
+
+        self._build_nozzle_arm()
+
+    def _build_nozzle_arm(self) -> None:
+        """스윙 노즐 암 + 매니폴드 노즐 헤드."""
+        # ── 로봇 암 기둥 (우측 벽에 부착) ────────────────────────────────────
+        post = vtkCylinderSource()
+        post.SetRadius(15)
+        post.SetHeight(700)
+        post.SetResolution(16)
+        actor_post = _make_actor(post, (0.45, 0.45, 0.5))
+        actor_post.RotateX(90)                         # Y → Z축
+        actor_post.SetPosition(260, 0, 400)            # 챔버 우측 안쪽
+        self._scene.add_actor("arm_post", actor_post)
+
+        # ── 수평 암 (기둥에서 챔버 중심 방향으로 뻗음) ───────────────────────
+        arm = vtkCubeSource()
+        arm.SetXLength(300)
+        arm.SetYLength(20)
+        arm.SetZLength(20)
+        self._actor_arm = _make_actor(arm, (0.5, 0.5, 0.55))
+        self._actor_arm.SetPosition(110, 0, 500)       # 기둥 중심 → 챔버 중심쪽
+        self._scene.add_actor("nozzle_arm", self._actor_arm)
+
+        # ── 노즐 헤드 — 암 끝단에 달린 매니폴드 바 ──────────────────────────
+        manifold = vtkCubeSource()
+        manifold.SetXLength(20)
+        manifold.SetYLength(180)
+        manifold.SetZLength(20)
+        actor_manifold = _make_actor(manifold, (0.4, 0.42, 0.45))
+        actor_manifold.SetPosition(-40, 0, 500)
+        self._scene.add_actor("nozzle_manifold", actor_manifold)
+
+        # ── 노즐 팁 — 매니폴드에 등간격으로 붙은 원뿔형 노즐 5개 ─────────────
+        from vtkmodules.vtkFiltersSources import vtkConeSource
+        for i in range(5):
+            nozzle = vtkConeSource()
+            nozzle.SetHeight(30)
+            nozzle.SetRadius(8)
+            nozzle.SetResolution(12)
+            actor_nozzle = _make_actor(nozzle, (0.2, 0.6, 0.8))
+            y = -80 + i * 40
+            actor_nozzle.RotateZ(90)                   # 팁이 아래(−Z)를 향하도록
+            actor_nozzle.SetPosition(-40, y, 483)
+            self._scene.add_actor(f"nozzle_tip_{i}", actor_nozzle)
