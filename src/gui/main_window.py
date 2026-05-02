@@ -1,5 +1,8 @@
 from PyQt6.QtCore import QTimer
-from PyQt6.QtWidgets import QHBoxLayout, QMainWindow, QScrollArea, QVBoxLayout, QWidget
+from PyQt6.QtWidgets import (
+    QHBoxLayout, QMainWindow, QScrollArea, QToolBar, QVBoxLayout, QWidget
+)
+from PyQt6.QtGui import QAction
 
 from src.config.config_loader import ConfigLoader
 from src.core.equipment_manager import EquipmentManager
@@ -8,10 +11,12 @@ from src.gui.panels.control_panel import ControlPanel
 from src.gui.panels.sensor_panel import SensorPanel
 from src.gui.panels.sequence_panel import SequencePanel
 from src.hal.hal_manager import HALManager
+from src.visualizer.scene_manager import SceneManager
+from src.visualizer.camera_control import CameraControl
 
 
 class MainWindow(QMainWindow):
-    """메인 윈도우 — 좌측 빈 3D 영역 + 우측 컨트롤/센서/시퀀스 패널."""
+    """메인 윈도우 — 좌측 3D 뷰 + 우측 컨트롤/센서/시퀀스 패널."""
 
     def __init__(self, project_name: str = "batch_spray") -> None:
         super().__init__()
@@ -39,17 +44,30 @@ class MainWindow(QMainWindow):
         self._equipment.set_step_callback(self._on_step_change)
 
     def _build_ui(self) -> None:
+        # 카메라 뷰 툴바
+        toolbar = QToolBar("Camera", self)
+        self.addToolBar(toolbar)
+        for label, slot in [
+            ("ISO",   lambda: self._camera.set_isometric()),
+            ("Front", lambda: self._camera.set_front()),
+            ("Top",   lambda: self._camera.set_top()),
+            ("Reset", lambda: self._camera.reset()),
+        ]:
+            action = QAction(label, self)
+            action.triggered.connect(slot)
+            toolbar.addAction(action)
+
         central = QWidget()
         self.setCentralWidget(central)
         root = QHBoxLayout(central)
         root.setContentsMargins(8, 8, 8, 8)
         root.setSpacing(8)
 
-        # 좌측 — 3D 뷰 플레이스홀더 (Phase 2에서 VTK로 교체)
-        placeholder = QWidget()
-        placeholder.setObjectName("ViewPlaceholder")
-        placeholder.setMinimumWidth(800)
-        root.addWidget(placeholder, stretch=3)
+        # 좌측 — VTK 3D 뷰
+        self._scene = SceneManager()
+        self._scene.setMinimumWidth(800)
+        self._camera = CameraControl(self._scene.renderer)
+        root.addWidget(self._scene, stretch=3)
 
         # 우측 패널
         right_panel = QWidget()
@@ -73,6 +91,11 @@ class MainWindow(QMainWindow):
         right_layout.addWidget(scroll, stretch=1)
 
         root.addWidget(right_panel, stretch=1)
+
+    def showEvent(self, event) -> None:
+        super().showEvent(event)
+        self._scene.initialize()
+        self._camera.set_isometric()
 
     def _connect_signals(self) -> None:
         self._ctrl_panel.sig_init.connect(self._on_init)
