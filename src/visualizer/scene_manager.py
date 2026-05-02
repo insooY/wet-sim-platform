@@ -1,3 +1,5 @@
+import vtkmodules.vtkRenderingOpenGL2  # noqa: F401 — OpenGL 백엔드 강제 로드
+
 from vtkmodules.qt.QVTKRenderWindowInteractor import QVTKRenderWindowInteractor
 from vtkmodules.vtkRenderingCore import vtkRenderer
 from vtkmodules.vtkInteractionStyle import vtkInteractorStyleTrackballCamera
@@ -13,7 +15,6 @@ class SceneManager(QVTKRenderWindowInteractor):
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self._actors: dict[str, object] = {}
-        self._initialized = False
         self._setup_renderer()
 
     def _setup_renderer(self) -> None:
@@ -26,15 +27,9 @@ class SceneManager(QVTKRenderWindowInteractor):
         style = vtkInteractorStyleTrackballCamera()
         self.GetRenderWindow().GetInteractor().SetInteractorStyle(style)
 
-    def showEvent(self, event) -> None:
-        super().showEvent(event)
-        if not self._initialized:
-            self._initialized = True
-            self.Initialize()
-            self.GetRenderWindow().Render()
-
     def initialize(self) -> None:
-        """외부에서 강제 렌더 트리거용."""
+        """윈도우가 표시된 후 명시적으로 호출 — VTK Initialize + 첫 렌더."""
+        self.Initialize()
         self.GetRenderWindow().Render()
 
     def add_actor(self, name: str, actor: object) -> None:
