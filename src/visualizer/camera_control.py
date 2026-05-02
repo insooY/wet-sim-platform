@@ -63,9 +63,8 @@ class CameraControl:
 
     def _get_bounds(self) -> tuple[float, ...]:
         """씬 전체 bounding box를 반환한다. 액터가 없으면 기본값."""
-        bounds = [0.0] * 6
-        self._renderer.ComputeVisiblePropBounds(bounds)
-        if all(b == 0.0 for b in bounds):
+        bounds = self._renderer.ComputeVisiblePropBounds()
+        if bounds[0] > bounds[1]:  # 빈 씬이면 VTK가 역전된 큰 값을 반환
             return (-500.0, 500.0, -500.0, 500.0, -100.0, 900.0)
         return tuple(bounds)
 
