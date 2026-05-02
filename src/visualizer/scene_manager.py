@@ -1,3 +1,14 @@
+import os
+import sys
+from pathlib import Path
+
+# Python 3.8+: MSYS2 ucrt64에서 vtkRenderingOpenGL2 의존 DLL 탐색 경로 추가
+_python_bin = Path(sys.executable).parent
+if _python_bin.exists():
+    os.add_dll_directory(str(_python_bin))
+
+import vtkmodules.vtkRenderingOpenGL2  # noqa: F401 — GenericOpenGLRenderWindow 팩토리 등록
+
 from vtkmodules.qt.QVTKRenderWindowInteractor import QVTKRenderWindowInteractor
 from vtkmodules.vtkRenderingCore import vtkRenderer
 from vtkmodules.vtkInteractionStyle import vtkInteractorStyleTrackballCamera
