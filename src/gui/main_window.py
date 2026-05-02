@@ -131,6 +131,7 @@ class MainWindow(QMainWindow):
         )
         self._scene.reset_camera()
         self._camera.set_isometric()
+        self._scene.render()
 
     def _connect_signals(self) -> None:
         self._ctrl_panel.sig_init.connect(self._on_init)

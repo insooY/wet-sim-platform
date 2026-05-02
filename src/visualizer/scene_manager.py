@@ -32,10 +32,11 @@ class SceneManager(QWidget):
 
         style = vtkInteractorStyleTrackballCamera()
         self._vtk_widget.GetRenderWindow().GetInteractor().SetInteractorStyle(style)
+        self._vtk_widget.Initialize()
 
     def initialize(self) -> None:
-        """MainWindow.show() 이후에 호출 — VTK 인터랙터를 초기화한다."""
-        self._vtk_widget.Initialize()
+        """show() 이후 명시적 렌더 트리거."""
+        self._vtk_widget.GetRenderWindow().Render()
 
     def add_actor(self, name: str, actor: object) -> None:
         self._renderer.AddActor(actor)
