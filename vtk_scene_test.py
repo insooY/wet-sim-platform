@@ -2,10 +2,19 @@
 SceneManager + BatchSprayModel 단독 렌더링 테스트.
 python vtk_scene_test.py
 """
+import os
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+# Python 3.8+: 확장 DLL 탐색 경로에 Python 실행 파일 디렉토리 추가
+# MSYS2 ucrt64에서 vtkRenderingOpenGL2 의존 DLL을 찾기 위해 필요
+_python_bin = Path(sys.executable).parent
+if _python_bin.exists():
+    os.add_dll_directory(str(_python_bin))
+
+import vtkmodules.vtkRenderingOpenGL2  # noqa: F401, E402 — OpenGL 렌더러 팩토리 등록
 
 from PyQt6.QtCore import QTimer
 from PyQt6.QtWidgets import QApplication, QMainWindow
