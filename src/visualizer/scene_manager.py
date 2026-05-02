@@ -1,5 +1,3 @@
-import vtkmodules.vtkRenderingOpenGL2  # noqa: F401 — OpenGL 백엔드 강제 로드
-
 from vtkmodules.qt.QVTKRenderWindowInteractor import QVTKRenderWindowInteractor
 from vtkmodules.vtkRenderingCore import vtkRenderer
 from vtkmodules.vtkInteractionStyle import vtkInteractorStyleTrackballCamera

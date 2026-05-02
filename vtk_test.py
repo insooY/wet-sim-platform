@@ -6,7 +6,6 @@ import sys
 from PyQt6.QtCore import QTimer
 from PyQt6.QtWidgets import QApplication, QHBoxLayout, QMainWindow, QWidget
 
-import vtkmodules.vtkRenderingOpenGL2  # noqa: F401 — OpenGL 백엔드 강제 로드
 from vtkmodules.qt.QVTKRenderWindowInteractor import QVTKRenderWindowInteractor
 from vtkmodules.vtkFiltersSources import vtkCubeSource
 from vtkmodules.vtkInteractionStyle import vtkInteractorStyleTrackballCamera
