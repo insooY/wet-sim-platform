@@ -45,6 +45,9 @@ class RecipeEngine:
     def start(self) -> None:
         self._current_index = 0
         self._state = StepState.RUNNING
+        if not self._steps:
+            self._state = StepState.DONE
+            return
         self._execute_step(self._current_index)
 
     def tick(self) -> bool:
