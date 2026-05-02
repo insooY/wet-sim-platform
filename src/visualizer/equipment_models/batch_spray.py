@@ -92,3 +92,43 @@ class BatchSprayModel:
         actor_front.GetProperty().SetAmbient(0.3)
         actor_front.SetPosition(0, -d / 2, h / 2)
         self._scene.add_actor("chamber_front", actor_front)
+
+        self._build_turntable_cassette()
+
+    def _build_turntable_cassette(self) -> None:
+        """턴테이블 디스크 + 그 위에 올라가는 카세트 박스."""
+        # ── 턴테이블 ──────────────────────────────────────────────────────────
+        # 챔버 바닥에서 20 mm 위, 반지름 220 mm, 높이 30 mm 원통 디스크
+        turntable = vtkCylinderSource()
+        turntable.SetRadius(220)
+        turntable.SetHeight(30)
+        turntable.SetResolution(48)
+
+        self._actor_turntable = _make_actor(turntable, (0.55, 0.55, 0.6))
+        # VTK 실린더 기본축이 Y축 → Z축으로 세우기 위해 X 방향 90° 회전
+        self._actor_turntable.RotateX(90)
+        self._actor_turntable.SetPosition(0, 0, 35)   # 바닥 + 두께/2
+        self._scene.add_actor("turntable", self._actor_turntable)
+
+        # ── 카세트 ────────────────────────────────────────────────────────────
+        # 25-slot 카세트: 200(X) × 120(Y) × 300(Z) mm, 턴테이블 위
+        cassette = vtkCubeSource()
+        cassette.SetXLength(200)
+        cassette.SetYLength(120)
+        cassette.SetZLength(300)
+
+        self._actor_cassette = _make_actor(cassette, (0.7, 0.7, 0.3))
+        self._actor_cassette.SetPosition(0, 0, 50 + 150)  # 터너테이블 top + 카세트 중심
+        self._scene.add_actor("cassette", self._actor_cassette)
+
+        # 카세트 슬롯 선 — 얇은 박스 24개로 웨이퍼 구분선 표시
+        slot_h = 300 / 25
+        for i in range(24):
+            slot_line = vtkCubeSource()
+            slot_line.SetXLength(202)
+            slot_line.SetYLength(2)
+            slot_line.SetZLength(2)
+            actor_slot = _make_actor(slot_line, (0.3, 0.3, 0.1))
+            z = 50 + slot_h * (i + 1)
+            actor_slot.SetPosition(0, 0, z)
+            self._scene.add_actor(f"cassette_slot_{i}", actor_slot)
