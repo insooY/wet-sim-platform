@@ -34,13 +34,20 @@ class TestWindow(QMainWindow):
         QTimer.singleShot(50, self._load_scene)
 
     def _load_scene(self):
+        rw = self._scene.GetRenderWindow()
+        print(f"RenderWindow class : {rw.GetClassName()}")
+        print(f"RenderWindow size  : {rw.GetSize()}")
+        print(f"Renderer count     : {rw.GetNumberOfLayers()}")
+
         print("_load_scene: building BatchSprayModel...")
         self._model = BatchSprayModel(self._scene)
-        print("BatchSprayModel done")
+        print(f"Actor count        : {self._scene.renderer.GetActors().GetNumberOfItems()}")
+
         self._scene.reset_camera()
         self._camera.set_isometric()
         self._scene.render()
-        print("render() done — 창에 장비가 보여야 합니다")
+        self._scene.update()   # Qt 위젯 강제 repaint
+        print("render() done")
 
 
 if __name__ == "__main__":
