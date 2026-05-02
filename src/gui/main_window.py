@@ -1,6 +1,6 @@
-from PyQt6.QtCore import Qt, QTimer
+from PyQt6.QtCore import QTimer
 from PyQt6.QtWidgets import (
-    QDockWidget, QMainWindow, QScrollArea, QToolBar, QVBoxLayout, QWidget
+    QHBoxLayout, QMainWindow, QScrollArea, QToolBar, QVBoxLayout, QWidget
 )
 from PyQt6.QtGui import QAction
 
@@ -60,17 +60,23 @@ class MainWindow(QMainWindow):
             action.triggered.connect(slot)
             toolbar.addAction(action)
 
-        # 3D 뷰 — QHBoxLayout 대신 centralWidget 직접 설정 (MSYS2 VTK 렌더링 요건)
-        self._scene = SceneManager()
-        self._camera = CameraControl(self._scene.renderer)
-        self.setCentralWidget(self._scene)
+        central = QWidget()
+        self.setCentralWidget(central)
+        root = QHBoxLayout(central)
+        root.setContentsMargins(8, 8, 8, 8)
+        root.setSpacing(8)
 
-        # 우측 패널 — QDockWidget으로 분리
+        # 좌측 — VTK 3D 뷰
+        self._scene = SceneManager()
+        self._scene.setMinimumWidth(800)
+        self._camera = CameraControl(self._scene.renderer)
+        root.addWidget(self._scene, stretch=3)
+
+        # 우측 패널
         right_panel = QWidget()
-        right_panel.setMinimumWidth(280)
-        right_panel.setMaximumWidth(340)
+        right_panel.setFixedWidth(300)
         right_layout = QVBoxLayout(right_panel)
-        right_layout.setContentsMargins(4, 4, 4, 4)
+        right_layout.setContentsMargins(0, 0, 0, 0)
         right_layout.setSpacing(8)
 
         self._ctrl_panel = ControlPanel()
@@ -87,10 +93,7 @@ class MainWindow(QMainWindow):
         scroll.setWidget(self._sensor_panel)
         right_layout.addWidget(scroll, stretch=1)
 
-        dock = QDockWidget("Controls", self)
-        dock.setWidget(right_panel)
-        dock.setFeatures(QDockWidget.DockWidgetFeature.NoDockWidgetFeatures)
-        self.addDockWidget(Qt.DockWidgetArea.RightDockWidgetArea, dock)
+        root.addWidget(right_panel, stretch=1)
 
     def showEvent(self, event) -> None:
         super().showEvent(event)

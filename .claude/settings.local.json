@@ -1,0 +1,32 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(python -m pytest tests/test_transport.py -v)",
+      "Bash(pip install *)",
+      "PowerShell(python --version)",
+      "PowerShell(python -m pip install pytest -q 2>&1)",
+      "PowerShell(python -m pytest d:/dev/wet-sim-platform/tests/test_transport.py -v 2>&1)",
+      "PowerShell(py --version 2>&1)",
+      "PowerShell(pacman -S python-pip --noconfirm 2>&1)",
+      "PowerShell(& \"C:\\\\msys64\\\\usr\\\\bin\\\\bash.exe\" -c \"pacman -S mingw-w64-ucrt-x86_64-python-pip --noconfirm\" 2>&1)",
+      "PowerShell(& \"C:\\\\msys64\\\\ucrt64\\\\bin\\\\pacman.exe\" -S mingw-w64-ucrt-x86_64-python-pip --noconfirm 2>&1)",
+      "Bash(pacman -S mingw-w64-ucrt-x86_64-python-pip --noconfirm)",
+      "Bash(/c/msys64/usr/bin/pacman.exe -S mingw-w64-ucrt-x86_64-python-pip --noconfirm)",
+      "Bash(python -m pip install pytest -q)",
+      "Bash(python -m pytest tests/test_hal.py -v)",
+      "Bash(python -c \"import PyQt6; print\\('PyQt6 OK'\\)\")",
+      "Bash(python -c \"import yaml; print\\('PyYAML OK'\\)\")",
+      "Bash(/c/msys64/usr/bin/pacman.exe -S mingw-w64-ucrt-x86_64-python-pyqt6 mingw-w64-ucrt-x86_64-python-yaml --noconfirm)",
+      "Bash(/c/msys64/usr/bin/pacman.exe -S mingw-w64-ucrt-x86_64-python-pyqt6 mingw-w64-ucrt-x86_64-python-yaml --noconfirm --overwrite=\"*\")",
+      "Bash(PYTHONPATH=. python src/main.py)",
+      "Bash(python -m pytest tests/test_fsm.py -v)",
+      "Bash(python -m pytest tests/test_recipe.py -v)",
+      "Bash(python -m pytest tests/ -v)",
+      "Bash(python -c ' *)",
+      "Bash(python src/main.py)",
+      "Bash(python -c \"import vtk; print\\('VTK', vtk.vtkVersion.GetVTKVersion\\(\\)\\)\")"
+    ]
+  }
+}
