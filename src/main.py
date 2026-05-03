@@ -11,6 +11,8 @@ from PyQt6.QtWidgets import QApplication
 from src.gui.selection_screen import SelectionScreen
 from src.gui.main_window import MainWindow
 
+_main_window: MainWindow | None = None   # GC 방지용 전역 참조
+
 
 def main() -> None:
     app = QApplication(sys.argv)
@@ -24,19 +26,23 @@ def main() -> None:
         sys.exit(app.exec())
 
     selector = SelectionScreen()
-    selector.sig_launch.connect(lambda proj, mode: _on_launch(selector, proj, mode))
+
+    def on_launch(proj: str, mode: str) -> None:
+        selector.hide()
+        _launch(proj, mode)
+
+    selector.sig_launch.connect(on_launch)
     selector.show()
 
     sys.exit(app.exec())
 
 
-def _on_launch(selector: SelectionScreen, project: str, mode: str) -> None:
-    selector.hide()
-    _launch(project, mode)
-
-
 def _launch(project: str, mode: str) -> None:
-    window = MainWindow(project_name=project)
-    window.show()
-    # mode는 향후 Connected 모드 구현 시 MainWindow에 전달
-    window._mode = mode
+    global _main_window
+    _main_window = MainWindow(project_name=project)
+    _main_window._mode = mode   # 향후 Connected 모드 전달용
+    _main_window.show()
+
+
+if __name__ == "__main__":
+    main()
