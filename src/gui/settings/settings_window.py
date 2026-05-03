@@ -9,6 +9,7 @@ from src.config.config_loader import ConfigLoader
 from src.config.config_writer import ConfigWriter
 from src.config.schema import ValidationError, validate_equipment
 from src.gui.settings.equipment_tab import EquipmentTab
+from src.gui.settings.io_tab import IOTab
 
 
 class SettingsWindow(QDialog):
@@ -40,8 +41,11 @@ class SettingsWindow(QDialog):
         self._eq_tab = EquipmentTab()
         self._tabs.addTab(self._eq_tab, "Equipment")
 
+        self._io_tab = IOTab()
+        self._tabs.addTab(self._io_tab, "I/O Devices")
+
         # ── 준비 중 탭 (Step 4에서 구현) ──
-        for label in ("Baths", "I/O Devices", "Communication", "3D Models", "Export"):
+        for label in ("Baths", "Communication", "3D Models", "Export"):
             placeholder = QWidget()
             msg = QLabel(f"{label} 탭은 준비 중입니다.")
             msg.setStyleSheet("color: #888; margin: 24px;")
@@ -65,12 +69,16 @@ class SettingsWindow(QDialog):
         try:
             self._eq_cfg = self._loader.load_equipment(self._project_name)
             self._eq_tab.load_config(self._eq_cfg)
+            self._io_tab.load_config(self._eq_cfg)
         except Exception as e:
             QMessageBox.warning(self, "로드 오류", f"설정을 불러오지 못했습니다:\n{e}")
 
     def _save(self) -> None:
-        eq_section = self._eq_tab.get_config()
-        merged = {**self._eq_cfg, **eq_section}
+        merged = {
+            **self._eq_cfg,
+            **self._eq_tab.get_config(),
+            **self._io_tab.get_config(),
+        }
 
         try:
             validate_equipment(merged)
