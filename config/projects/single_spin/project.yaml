@@ -1,0 +1,8 @@
+project:
+  name: "Single Wafer Spin Cleaner"
+  description: "스핀 척(3000rpm) + 매엽 + 스윙 노즐 암 세정 장비"
+  equipment_type: single_spin
+  config_version: "1.0"
+
+equipment_config: equipment.yaml
+recipes: []

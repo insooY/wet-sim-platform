@@ -8,6 +8,7 @@ if str(_project_root) not in sys.path:
 
 from PyQt6.QtWidgets import QApplication
 
+from src.gui.selection_screen import SelectionScreen
 from src.gui.main_window import MainWindow
 
 
@@ -15,12 +16,27 @@ def main() -> None:
     app = QApplication(sys.argv)
     app.setApplicationName("Wet Process Simulator")
 
-    project = sys.argv[1] if len(sys.argv) > 1 else "batch_spray"
-    window = MainWindow(project_name=project)
-    window.show()
+    # CLI에서 프로젝트를 바로 지정할 경우 선택 화면 생략
+    if len(sys.argv) >= 2:
+        project = sys.argv[1]
+        mode = sys.argv[2] if len(sys.argv) >= 3 else "standalone"
+        _launch(project, mode)
+        sys.exit(app.exec())
+
+    selector = SelectionScreen()
+    selector.sig_launch.connect(lambda proj, mode: _on_launch(selector, proj, mode))
+    selector.show()
 
     sys.exit(app.exec())
 
 
-if __name__ == "__main__":
-    main()
+def _on_launch(selector: SelectionScreen, project: str, mode: str) -> None:
+    selector.hide()
+    _launch(project, mode)
+
+
+def _launch(project: str, mode: str) -> None:
+    window = MainWindow(project_name=project)
+    window.show()
+    # mode는 향후 Connected 모드 구현 시 MainWindow에 전달
+    window._mode = mode

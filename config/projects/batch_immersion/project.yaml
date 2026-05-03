@@ -1,0 +1,8 @@
+project:
+  name: "Batch Immersion Cleaner"
+  description: "다중 배스(가변) + 리프터 + 카세트 이송 로봇 세정 장비"
+  equipment_type: batch_immersion
+  config_version: "1.0"
+
+equipment_config: equipment.yaml
+recipes: []
