@@ -1,0 +1,131 @@
+equipment:
+  name: "Batch Immersion Cleaner"
+  type: batch_immersion
+  wafer_size: 300mm
+  cassette_slots: 25
+  loadports: 2
+
+baths:
+  - id: bath_1
+    name: "SC-1"
+    chemistry: SC1
+    temperature: 70
+    dip_time_sec: 600
+    megasonic: true
+    overflow: true
+
+  - id: bath_2
+    name: "QDR-1"
+    chemistry: DIW
+    temperature: 23
+    dip_time_sec: 300
+    megasonic: false
+    overflow: false
+
+  - id: bath_3
+    name: "DHF"
+    chemistry: DHF
+    temperature: 23
+    dip_time_sec: 120
+    megasonic: false
+    overflow: false
+
+  - id: bath_4
+    name: "QDR-2"
+    chemistry: DIW
+    temperature: 23
+    dip_time_sec: 300
+    megasonic: false
+    overflow: false
+
+motors:
+  - id: M1
+    name: "Transfer Robot"
+    type: servo
+    range: [0, 12000]
+    max_speed: 500.0
+    accel: 100.0
+    simulation: {}
+
+  - id: M2
+    name: "Lifter"
+    type: servo
+    range: [-200, 300]
+    max_speed: 100.0
+    accel: 50.0
+    simulation: {}
+
+valves:
+  - id: V1
+    name: "SC1 Supply"
+    type: pneumatic
+    response_ms: 200
+
+  - id: V2
+    name: "DHF Supply"
+    type: pneumatic
+    response_ms: 200
+
+  - id: V3
+    name: "DIW Supply"
+    type: pneumatic
+    response_ms: 150
+
+  - id: V4
+    name: "N2 Dry"
+    type: pneumatic
+    response_ms: 100
+
+sensors:
+  - id: S1
+    name: "Bath1 Temperature"
+    type: temperature
+    unit: "°C"
+    range: [15, 85]
+    initial_value: 70.0
+    simulation:
+      noise: 0.3
+      response_tau: 5.0
+
+  - id: S2
+    name: "Bath2 Temperature"
+    type: temperature
+    unit: "°C"
+    range: [15, 85]
+    initial_value: 23.0
+    simulation:
+      noise: 0.2
+      response_tau: 5.0
+
+  - id: S3
+    name: "Bath3 Temperature"
+    type: temperature
+    unit: "°C"
+    range: [15, 35]
+    initial_value: 23.0
+    simulation:
+      noise: 0.1
+      response_tau: 3.0
+
+  - id: S4
+    name: "Robot Position"
+    type: flow
+    unit: "mm"
+    range: [0, 12000]
+    initial_value: 0.0
+    simulation:
+      noise: 0.5
+      response_tau: 0.5
+
+heaters:
+  - id: H1
+    name: "SC1 Heater"
+    power_kw: 40.0
+    target_range: [20, 80]
+    tau: 25.0
+
+  - id: H2
+    name: "DIW Heater"
+    power_kw: 10.0
+    target_range: [20, 80]
+    tau: 20.0
