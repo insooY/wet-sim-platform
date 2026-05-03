@@ -16,6 +16,7 @@ from src.visualizer.camera_control import CameraControl
 from src.visualizer.animation import AnimationManager, RotateAnimation, OscillateAnimation
 from src.visualizer.equipment_models.batch_spray import BatchSprayModel
 from src.visualizer.particles import SprayParticleSystem
+from src.gui.settings.settings_window import SettingsWindow
 
 
 class MainWindow(QMainWindow):
@@ -26,6 +27,7 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("Wet Process Simulator")
         self.resize(1280, 800)
 
+        self._project_name = project_name
         self._loader = ConfigLoader()
         self._hal = HALManager()
         self._equipment: EquipmentManager | None = None
@@ -51,10 +53,11 @@ class MainWindow(QMainWindow):
         toolbar = QToolBar("Camera", self)
         self.addToolBar(toolbar)
         for label, slot in [
-            ("ISO",   lambda: self._camera.set_isometric()),
-            ("Front", lambda: self._camera.set_front()),
-            ("Top",   lambda: self._camera.set_top()),
-            ("Reset", lambda: self._camera.reset()),
+            ("ISO",      lambda: self._camera.set_isometric()),
+            ("Front",    lambda: self._camera.set_front()),
+            ("Top",      lambda: self._camera.set_top()),
+            ("Reset",    lambda: self._camera.reset()),
+            ("Settings", lambda: self._open_settings()),
         ]:
             action = QAction(label, self)
             action.triggered.connect(slot)
@@ -157,6 +160,10 @@ class MainWindow(QMainWindow):
         self._anim_timer.start(33)
 
     # ── 슬롯 ─────────────────────────────────────────────────────────────────
+
+    def _open_settings(self) -> None:
+        dlg = SettingsWindow(self._project_name, parent=self)
+        dlg.exec()
 
     def _on_tick(self) -> None:
         if self._equipment:
