@@ -7,7 +7,9 @@ from PyQt6.QtGui import QAction
 from src.config.config_loader import ConfigLoader
 from src.core.equipment_manager import EquipmentManager
 from src.core.fsm import EquipmentState
+from src.core.fault_injection import FaultInjector
 from src.gui.panels.control_panel import ControlPanel
+from src.gui.panels.fault_panel import FaultPanel
 from src.gui.panels.sensor_panel import SensorPanel
 from src.gui.panels.sequence_panel import SequencePanel
 from src.hal.hal_manager import HALManager
@@ -47,6 +49,7 @@ class MainWindow(QMainWindow):
         self._equipment = EquipmentManager(self._hal)
         self._equipment.add_state_listener(self._on_state_change)
         self._equipment.set_step_callback(self._on_step_change)
+        self._fault_injector = FaultInjector(self._hal)
 
     def _build_ui(self) -> None:
         # 카메라 뷰 툴바
@@ -95,6 +98,11 @@ class MainWindow(QMainWindow):
         self._sensor_panel.load_hal(self._hal)
         scroll.setWidget(self._sensor_panel)
         right_layout.addWidget(scroll, stretch=1)
+
+        self._fault_panel = FaultPanel()
+        self._fault_panel.load_hal(self._hal)
+        self._fault_panel.setMaximumHeight(200)
+        right_layout.addWidget(self._fault_panel)
 
         root.addWidget(right_panel, stretch=1)
 
@@ -168,6 +176,7 @@ class MainWindow(QMainWindow):
     def _on_tick(self) -> None:
         if self._equipment:
             self._equipment.tick()
+        self._fault_injector.apply()
 
     def _on_anim_tick(self) -> None:
         if not hasattr(self, "_anim_mgr"):

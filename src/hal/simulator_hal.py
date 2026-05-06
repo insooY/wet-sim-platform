@@ -63,7 +63,12 @@ class SimMotor(IMotor):
         else:
             self._position += delta
 
+    def set_error(self, error: bool) -> None:
+        self._error = error
+
     def move_absolute(self, position: float) -> None:
+        if getattr(self, "_error", False):
+            return
         position = max(self._range[0], min(self._range[1], position))
         if abs(position - self._position) < 1e-6:
             self._phase = self._PHASE_DONE
@@ -124,13 +129,20 @@ class SimValve(IValve):
             self._open = self._command_open
             self._command_open = None
 
+    def set_stuck(self, stuck: bool) -> None:
+        self._stuck = stuck
+
     def open(self) -> None:
-        self._update()  # 대기 중인 전이를 먼저 반영
+        if getattr(self, "_stuck", False):
+            return
+        self._update()
         self._command_open = True
         self._command_time = time.monotonic()
 
     def close(self) -> None:
-        self._update()  # 대기 중인 전이를 먼저 반영
+        if getattr(self, "_stuck", False):
+            return
+        self._update()
         self._command_open = False
         self._command_time = time.monotonic()
 
@@ -174,6 +186,12 @@ class SimSensor(ISensor):
 
     def set_fault(self, fail: bool) -> None:
         self._fail = fail
+
+    def add_offset(self, delta: float) -> None:
+        self._current += delta
+
+    def reset_offset(self) -> None:
+        pass  # 타깃으로 자연 수렴되도록 오프셋 누적만 중단
 
     def _update(self) -> None:
         now = time.monotonic()
