@@ -118,3 +118,119 @@ class TestRecipeEngine:
         result = engine.tick()
         assert not result
         assert engine.is_done
+
+    def test_motor_move_absolute_executed(self):
+        hal = make_hal()
+        engine = RecipeEngine(hal)
+        engine.load({"steps": [
+            {"name": "Move", "motor_moves": [{"id": "M1", "position": 200.0}], "duration": 0},
+        ]})
+        engine.start()
+        deadline = time.monotonic() + 3.0
+        while not engine.is_done:
+            engine.tick()
+            assert time.monotonic() < deadline
+        assert hal.get_motor("M1").get_position() == pytest.approx(200.0, abs=1.0)
+
+    def test_step_waits_for_motor_done(self):
+        hal = HALManager()
+        hal.load_from_config({
+            "motors":  [{"id": "M1", "max_speed": 10.0, "accel": 5.0, "range": [0, 500]}],
+            "valves":  [],
+            "sensors": [],
+            "heaters": [],
+        })
+        engine = RecipeEngine(hal)
+        engine.load({"steps": [
+            {"name": "SlowMove", "motor_moves": [{"id": "M1", "position": 100.0}], "duration": 0},
+            {"name": "Next",     "duration": 0},
+        ]})
+        engine.start()
+        # 느린 모터 — 첫 tick에서 스텝이 넘어가면 안 된다
+        engine.tick()
+        assert engine.current_step_index == 0
+
+    def test_heater_setpoint_applied(self):
+        hal = make_hal()
+        engine = RecipeEngine(hal)
+        engine.load({"steps": [
+            {"name": "Heat", "heater_setpoints": [{"id": "H1", "temperature": 70.0}], "duration": 0},
+        ]})
+        engine.start()
+        engine.tick()
+        assert hal.get_heater("H1").get_target() == pytest.approx(70.0)
+
+    def test_wait_heater_blocks_until_reached(self):
+        hal = HALManager()
+        hal.load_from_config({
+            "motors":  [],
+            "valves":  [],
+            "sensors": [],
+            "heaters": [{"id": "H1", "power_kw": 0.001, "tau": 9999.0}],
+        })
+        engine = RecipeEngine(hal)
+        engine.load({"steps": [
+            {"name": "Heat",
+             "heater_setpoints": [{"id": "H1", "temperature": 80.0}],
+             "wait_heater": [{"id": "H1", "tolerance": 1.0}],
+             "duration": 0},
+            {"name": "Next", "duration": 0},
+        ]})
+        engine.start()
+        engine.tick()
+        # 히터가 목표에 도달하지 못했으므로 스텝이 넘어가면 안 된다
+        assert engine.current_step_index == 0
+
+    def test_abort_tick_returns_false(self):
+        engine = RecipeEngine(make_hal())
+        engine.load(SIMPLE_RECIPE)
+        engine.start()
+        engine.abort()
+        assert engine.tick() is False
+
+    def test_abort_is_not_done(self):
+        engine = RecipeEngine(make_hal())
+        engine.load(SIMPLE_RECIPE)
+        engine.start()
+        engine.abort()
+        assert not engine.is_done
+
+    def test_tick_before_start_returns_false(self):
+        engine = RecipeEngine(make_hal())
+        engine.load(SIMPLE_RECIPE)
+        assert engine.tick() is False
+
+    def test_step_name_fallback_when_no_name_key(self):
+        engine = RecipeEngine(make_hal())
+        engine.load({"steps": [{"duration": 0}]})
+        engine.start()
+        assert "Step 0" in engine.current_step_name
+
+    def test_step_callback_order(self):
+        engine = RecipeEngine(make_hal())
+        order: list[tuple[int, str]] = []
+        engine.set_step_callback(lambda i, n: order.append((i, n)))
+        engine.load({"steps": [
+            {"name": "A", "duration": 0},
+            {"name": "B", "duration": 0},
+            {"name": "C", "duration": 0},
+        ]})
+        engine.start()
+        deadline = time.monotonic() + 3.0
+        while not engine.is_done:
+            engine.tick()
+            assert time.monotonic() < deadline
+        assert order == [(0, "A"), (1, "B"), (2, "C")]
+
+    def test_load_resets_state(self):
+        engine = RecipeEngine(make_hal())
+        engine.load({"steps": [{"name": "S", "duration": 0}]})
+        engine.start()
+        deadline = time.monotonic() + 2.0
+        while not engine.is_done:
+            engine.tick()
+            assert time.monotonic() < deadline
+        # 다시 load하면 초기 상태로 돌아와야 한다
+        engine.load(SIMPLE_RECIPE)
+        assert engine.current_step_index == 0
+        assert not engine.is_done
