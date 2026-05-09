@@ -1,15 +1,18 @@
 from PyQt6.QtCore import QTimer
 from PyQt6.QtWidgets import (
-    QHBoxLayout, QMainWindow, QScrollArea, QToolBar, QVBoxLayout, QWidget
+    QHBoxLayout, QMainWindow, QScrollArea, QStackedWidget,
+    QToolBar, QVBoxLayout, QWidget,
 )
 from PyQt6.QtGui import QAction
 
 from src.config.config_loader import ConfigLoader
+from src.connected.session import ConnectedSession
 from src.core.equipment_manager import EquipmentManager
 from src.core.fsm import EquipmentState
 from src.core.fault_injection import FaultInjector
 from src.gui.panels.control_panel import ControlPanel
 from src.gui.panels.fault_panel import FaultPanel
+from src.gui.panels.message_log import MessageLogPanel
 from src.gui.panels.sensor_panel import SensorPanel
 from src.gui.panels.sequence_panel import SequencePanel
 from src.hal.hal_manager import HALManager
@@ -24,21 +27,27 @@ from src.gui.settings.settings_window import SettingsWindow
 class MainWindow(QMainWindow):
     """메인 윈도우 — 좌측 3D 뷰 + 우측 컨트롤/센서/시퀀스 패널."""
 
-    def __init__(self, project_name: str = "batch_spray") -> None:
+    def __init__(self, project_name: str = "batch_spray",
+                 mode: str = "standalone") -> None:
         super().__init__()
         self.setWindowTitle("Wet Process Simulator")
         self.resize(1280, 800)
 
         self._project_name = project_name
+        self._mode = mode
         self._loader = ConfigLoader()
         self._hal = HALManager()
         self._equipment: EquipmentManager | None = None
         self._recipes: list[dict] = []
+        self._session: ConnectedSession | None = None
 
         self._setup_hal(project_name)
         self._build_ui()
         self._connect_signals()
         self._start_timers()
+
+        if mode == "connected":
+            self._start_connected_mode()
 
     # ── 초기화 ────────────────────────────────────────────────────────────────
 
@@ -52,7 +61,6 @@ class MainWindow(QMainWindow):
         self._fault_injector = FaultInjector(self._hal)
 
     def _build_ui(self) -> None:
-        # 카메라 뷰 툴바
         toolbar = QToolBar("Camera", self)
         self.addToolBar(toolbar)
         for label, slot in [
@@ -99,26 +107,35 @@ class MainWindow(QMainWindow):
         scroll.setWidget(self._sensor_panel)
         right_layout.addWidget(scroll, stretch=1)
 
+        # Standalone: Fault Panel / Connected: Message Log
+        self._bottom_stack = QStackedWidget()
+
         self._fault_panel = FaultPanel()
         self._fault_panel.load_hal(self._hal)
-        self._fault_panel.setMaximumHeight(200)
-        right_layout.addWidget(self._fault_panel)
+        self._bottom_stack.addWidget(self._fault_panel)   # index 0
+
+        self._msg_log = MessageLogPanel()
+        self._bottom_stack.addWidget(self._msg_log)       # index 1
+
+        self._bottom_stack.setMaximumHeight(200)
+        self._bottom_stack.setCurrentIndex(0)
+        right_layout.addWidget(self._bottom_stack)
 
         root.addWidget(right_panel, stretch=1)
 
     def showEvent(self, event) -> None:
         super().showEvent(event)
-        self._scene.Initialize()          # VTK 초기화 — 윈도우가 표시된 직후 동기 호출
+        self._scene.Initialize()
         QTimer.singleShot(50, self._init_3d)
 
     def _init_3d(self) -> None:
-        self._scene.GetRenderWindow().Render()  # 빈 화면 먼저 렌더
+        self._scene.GetRenderWindow().Render()
         self._eq_model = BatchSprayModel(self._scene)
         self._anim_mgr = AnimationManager(self._scene.render)
         self._anim_turntable = RotateAnimation(
             self._eq_model._actor_turntable,
             axis=(0.0, 0.0, 1.0),
-            speed_deg_per_sec=36.0,   # 1 rpm
+            speed_deg_per_sec=36.0,
         )
         self._anim_arm = OscillateAnimation(
             self._eq_model._actor_arm,
@@ -129,16 +146,15 @@ class MainWindow(QMainWindow):
         self._anim_mgr.add(self._anim_turntable)
         self._anim_mgr.add(self._anim_arm)
 
-        # 노즐 팁 위치 (batch_spray 모델과 동일 좌표)
         nozzle_positions = [(-40, y, 483) for y in range(-80, 81, 40)]
         self._spray_sc1 = SprayParticleSystem(
             self._scene, nozzle_positions,
-            color=(0.55, 0.2, 0.8),   # SC1 보라색
+            color=(0.55, 0.2, 0.8),
             actor_name="spray_sc1",
         )
         self._spray_diw = SprayParticleSystem(
             self._scene, nozzle_positions,
-            color=(0.3, 0.7, 1.0),    # DIW 파란색
+            color=(0.3, 0.7, 1.0),
             actor_name="spray_diw",
         )
         self._scene.reset_camera()
@@ -152,20 +168,41 @@ class MainWindow(QMainWindow):
         self._ctrl_panel.sig_estop.connect(self._on_estop)
 
     def _start_timers(self) -> None:
-        # 장비 tick (100 ms)
         self._tick_timer = QTimer(self)
         self._tick_timer.timeout.connect(self._on_tick)
         self._tick_timer.start(100)
 
-        # UI 갱신 (500 ms)
         self._ui_timer = QTimer(self)
-        self._ui_timer.timeout.connect(self._sensor_panel.refresh)
+        self._ui_timer.timeout.connect(self._on_ui_refresh)
         self._ui_timer.start(500)
 
-        # 3D 애니메이션 tick (33 ms ≈ 30 fps)
         self._anim_timer = QTimer(self)
         self._anim_timer.timeout.connect(self._on_anim_tick)
         self._anim_timer.start(33)
+
+    # ── Connected Mode ────────────────────────────────────────────────────────
+
+    def _start_connected_mode(self) -> None:
+        self._session = ConnectedSession(self._hal)
+        self._session.on_connect(self._on_zmq_connect)
+        self._session.on_disconnect(self._on_zmq_disconnect)
+        if self._session.start():
+            self._msg_log.set_source(self._session.message_log)
+            self._bottom_stack.setCurrentIndex(1)   # 메시지 로그 표시
+            self.setWindowTitle(f"Wet Process Simulator — Connected [{self._project_name}]")
+        else:
+            self._session = None
+
+    def _on_zmq_connect(self) -> None:
+        self._msg_log.set_connected(True)
+
+    def _on_zmq_disconnect(self) -> None:
+        self._msg_log.set_connected(False)
+
+    def closeEvent(self, event) -> None:
+        if self._session:
+            self._session.stop()
+        super().closeEvent(event)
 
     # ── 슬롯 ─────────────────────────────────────────────────────────────────
 
@@ -177,6 +214,13 @@ class MainWindow(QMainWindow):
         if self._equipment:
             self._equipment.tick()
         self._fault_injector.apply()
+        if self._session:
+            self._session.tick()
+
+    def _on_ui_refresh(self) -> None:
+        self._sensor_panel.refresh()
+        if self._mode == "connected":
+            self._msg_log.refresh()
 
     def _on_anim_tick(self) -> None:
         if not hasattr(self, "_anim_mgr"):
@@ -185,7 +229,6 @@ class MainWindow(QMainWindow):
         self._update_particles()
 
     def _update_particles(self) -> None:
-        """밸브 상태에 따라 파티클 시작/중지 및 tick."""
         if not hasattr(self, "_spray_sc1"):
             return
         v1_open = self._hal.get_valve("V1").is_open()
@@ -231,6 +274,8 @@ class MainWindow(QMainWindow):
 
     def _on_state_change(self, old: EquipmentState, new: EquipmentState) -> None:
         self._ctrl_panel.update_state(new)
+        if self._session and self._session.reporter:
+            self._session.reporter.publish_equipment_state(new.name)
         if not hasattr(self, "_anim_turntable"):
             return
         if new == EquipmentState.RUNNING:
@@ -243,3 +288,5 @@ class MainWindow(QMainWindow):
     def _on_step_change(self, index: int, name: str) -> None:
         current, total = self._equipment.recipe_progress
         self._seq_panel.update_progress(current, total, name)
+        if self._session and self._session.reporter:
+            self._session.reporter.publish_recipe_step(index, name, total)
