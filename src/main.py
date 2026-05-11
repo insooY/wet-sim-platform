@@ -13,11 +13,18 @@ from src.gui.selection_screen import SelectionScreen
 from src.gui.main_window import MainWindow
 
 _main_window: MainWindow | None = None   # GC 방지용 전역 참조
+_QSS_PATH = _project_root / "assets" / "styles" / "dark_theme.qss"
+
+
+def _load_stylesheet(app: QApplication) -> None:
+    if _QSS_PATH.exists():
+        app.setStyleSheet(_QSS_PATH.read_text(encoding="utf-8"))
 
 
 def main() -> None:
     app = QApplication(sys.argv)
     app.setApplicationName("Wet Process Simulator")
+    _load_stylesheet(app)
 
     # 전역 예외를 캐치하여 다이얼로그로 표시
     sys.excepthook = _excepthook
@@ -44,8 +51,7 @@ def main() -> None:
 def _launch(project: str, mode: str) -> None:
     global _main_window
     try:
-        _main_window = MainWindow(project_name=project)
-        _main_window._mode = mode
+        _main_window = MainWindow(project_name=project, mode=mode)
         _main_window.show()
     except Exception:
         tb = traceback.format_exc()
