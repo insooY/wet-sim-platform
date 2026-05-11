@@ -1,0 +1,127 @@
+recipe:
+  name: "SC1 Immersion Clean"
+  description: "SC1 침지 세정 — Bath1(SC1) → Bath2(QDR) → Bath3(DHF) → Bath4(QDR) 순차 공정"
+  chemistry: SC1
+  wafer_size: 300mm
+
+steps:
+  - name: "Bath Preheat"
+    heater_setpoints:
+      - id: H1
+        temperature: 70.0
+      - id: H2
+        temperature: 23.0
+    wait_heater:
+      - id: H1
+        tolerance: 1.0
+    duration: 0
+
+  - name: "Load to Bath1"
+    valves_open: [V1]
+    motor_moves:
+      - id: M1
+        position: 0.0
+      - id: M2
+        position: 0.0
+    duration: 5
+
+  - name: "Lower into Bath1"
+    motor_moves:
+      - id: M2
+        position: -150.0
+    duration: 0
+
+  - name: "SC1 Dip"
+    valves_open: [V1]
+    duration: 60
+
+  - name: "Lift from Bath1"
+    motor_moves:
+      - id: M2
+        position: 100.0
+    duration: 0
+
+  - name: "Transfer to Bath2"
+    motor_moves:
+      - id: M1
+        position: 3000.0
+    duration: 0
+
+  - name: "Lower into Bath2 (QDR)"
+    motor_moves:
+      - id: M2
+        position: -150.0
+    duration: 0
+
+  - name: "QDR Rinse 1"
+    valves_open: [V3]
+    duration: 30
+
+  - name: "Lift from Bath2"
+    valves_close: [V3]
+    motor_moves:
+      - id: M2
+        position: 100.0
+    duration: 0
+
+  - name: "Transfer to Bath3"
+    motor_moves:
+      - id: M1
+        position: 6000.0
+    duration: 0
+
+  - name: "Lower into Bath3 (DHF)"
+    motor_moves:
+      - id: M2
+        position: -150.0
+    duration: 0
+
+  - name: "DHF Dip"
+    valves_open: [V2]
+    duration: 30
+
+  - name: "Lift from Bath3"
+    valves_close: [V2]
+    motor_moves:
+      - id: M2
+        position: 100.0
+    duration: 0
+
+  - name: "Transfer to Bath4"
+    motor_moves:
+      - id: M1
+        position: 9000.0
+    duration: 0
+
+  - name: "Lower into Bath4 (QDR)"
+    motor_moves:
+      - id: M2
+        position: -150.0
+    duration: 0
+
+  - name: "QDR Rinse 2"
+    valves_open: [V3]
+    duration: 30
+
+  - name: "Lift & N2 Dry"
+    valves_close: [V3]
+    motor_moves:
+      - id: M2
+        position: 100.0
+    duration: 0
+
+  - name: "N2 Dry"
+    valves_open: [V4]
+    duration: 20
+
+  - name: "Unload / Home"
+    valves_close: [V4]
+    motor_moves:
+      - id: M1
+        position: 0.0
+      - id: M2
+        position: 0.0
+    heater_setpoints:
+      - id: H1
+        temperature: 25.0
+    duration: 0
