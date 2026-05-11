@@ -67,13 +67,19 @@ def validate_equipment(cfg: dict[str, Any]) -> None:
 
 
 def validate_recipe(cfg: dict[str, Any]) -> None:
-    """recipe YAML 내용을 검증한다."""
+    """recipe YAML 내용을 검증한다.
+
+    YAML 구조:
+        recipe:         # 메타데이터
+          name: ...
+        steps:          # 최상위 키
+          - name: ...
+    """
     recipe = _require(cfg, "recipe", "root")
     _require(recipe, "name", "recipe")
-    steps = _require(recipe, "steps", "recipe")
+    steps = _require(cfg, "steps", "root")
     if not isinstance(steps, list):
         raise ValidationError("recipe.steps: 리스트여야 합니다")
     for i, step in enumerate(steps):
-        ctx = f"recipe.steps[{i}]"
+        ctx = f"steps[{i}]"
         _require(step, "name", ctx)
-        _require(step, "duration_sec", ctx)

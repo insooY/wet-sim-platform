@@ -5,4 +5,5 @@ project:
   config_version: "1.0"
 
 equipment_config: equipment.yaml
-recipes: []
+recipes:
+  - recipes/sc1_spin.yaml
