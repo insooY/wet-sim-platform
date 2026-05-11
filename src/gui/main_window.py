@@ -20,6 +20,8 @@ from src.visualizer.scene_manager import SceneManager
 from src.visualizer.camera_control import CameraControl
 from src.visualizer.animation import AnimationManager, RotateAnimation, OscillateAnimation
 from src.visualizer.equipment_models.batch_spray import BatchSprayModel
+from src.visualizer.equipment_models.single_spin import SingleSpinModel
+from src.visualizer.equipment_models.batch_immersion import BatchImmersionModel
 from src.visualizer.particles import SprayParticleSystem
 from src.gui.settings.settings_window import SettingsWindow
 
@@ -35,6 +37,7 @@ class MainWindow(QMainWindow):
 
         self._project_name = project_name
         self._mode = mode
+        self._equipment_type: str = "batch_spray"
         self._loader = ConfigLoader()
         self._hal = HALManager()
         self._equipment: EquipmentManager | None = None
@@ -53,6 +56,8 @@ class MainWindow(QMainWindow):
 
     def _setup_hal(self, project_name: str) -> None:
         equipment_cfg = self._loader.load_equipment(project_name)
+        self._equipment_type = (equipment_cfg.get("equipment", {})
+                                .get("type", "batch_spray"))
         self._hal.load_from_config(equipment_cfg)
         self._recipes = self._loader.load_all_recipes(project_name)
         self._equipment = EquipmentManager(self._hal)
@@ -130,8 +135,23 @@ class MainWindow(QMainWindow):
 
     def _init_3d(self) -> None:
         self._scene.GetRenderWindow().Render()
-        self._eq_model = BatchSprayModel(self._scene)
         self._anim_mgr = AnimationManager(self._scene.render)
+        self._spray_sc1 = None
+        self._spray_diw = None
+
+        if self._equipment_type == "single_spin":
+            self._init_3d_single_spin()
+        elif self._equipment_type == "batch_immersion":
+            self._init_3d_batch_immersion()
+        else:
+            self._init_3d_batch_spray()
+
+        self._scene.reset_camera()
+        self._camera.set_isometric()
+        self._scene.render()
+
+    def _init_3d_batch_spray(self) -> None:
+        self._eq_model = BatchSprayModel(self._scene)
         self._anim_turntable = RotateAnimation(
             self._eq_model._actor_turntable,
             axis=(0.0, 0.0, 1.0),
@@ -157,9 +177,44 @@ class MainWindow(QMainWindow):
             color=(0.3, 0.7, 1.0),
             actor_name="spray_diw",
         )
-        self._scene.reset_camera()
-        self._camera.set_isometric()
-        self._scene.render()
+        self._spray_valve_map = {"spray_sc1": "V1", "spray_diw": "V3"}
+
+    def _init_3d_single_spin(self) -> None:
+        self._eq_model = SingleSpinModel(self._scene)
+        self._anim_turntable = RotateAnimation(
+            self._eq_model._actor_chuck,
+            axis=(0.0, 0.0, 1.0),
+            speed_deg_per_sec=180.0,
+        )
+        self._anim_arm = OscillateAnimation(
+            self._eq_model._actor_arm,
+            axis=(0.0, 0.0, 1.0),
+            amplitude_deg=30.0,
+            period_sec=8.0,
+        )
+        self._anim_mgr.add(self._anim_turntable)
+        self._anim_mgr.add(self._anim_arm)
+        self._spray_valve_map = {}
+
+    def _init_3d_batch_immersion(self) -> None:
+        equipment_cfg = self._loader.load_equipment(self._project_name)
+        baths = equipment_cfg.get("baths", None)
+        self._eq_model = BatchImmersionModel(self._scene, baths=baths)
+        self._anim_turntable = OscillateAnimation(
+            self._eq_model._actor_lifter_beam,
+            axis=(0.0, 0.0, 1.0),
+            amplitude_deg=0.0,
+            period_sec=4.0,
+        )
+        self._anim_arm = OscillateAnimation(
+            self._eq_model._actor_robot,
+            axis=(1.0, 0.0, 0.0),
+            amplitude_deg=0.0,
+            period_sec=6.0,
+        )
+        self._anim_mgr.add(self._anim_turntable)
+        self._anim_mgr.add(self._anim_arm)
+        self._spray_valve_map = {}
 
     def _connect_signals(self) -> None:
         self._ctrl_panel.sig_init.connect(self._on_init)
@@ -229,26 +284,27 @@ class MainWindow(QMainWindow):
         self._update_particles()
 
     def _update_particles(self) -> None:
-        if not hasattr(self, "_spray_sc1"):
+        if not hasattr(self, "_spray_valve_map"):
             return
-        v1_open = self._hal.get_valve("V1").is_open()
-        v3_open = self._hal.get_valve("V3").is_open()
-
-        if v1_open:
-            if not self._spray_sc1.is_active:
-                self._spray_sc1.start()
-            self._spray_sc1.tick()
-        else:
-            if self._spray_sc1.is_active:
-                self._spray_sc1.stop()
-
-        if v3_open:
-            if not self._spray_diw.is_active:
-                self._spray_diw.start()
-            self._spray_diw.tick()
-        else:
-            if self._spray_diw.is_active:
-                self._spray_diw.stop()
+        spray_map = {
+            "spray_sc1": self._spray_sc1,
+            "spray_diw": self._spray_diw,
+        }
+        for name, valve_id in self._spray_valve_map.items():
+            spray = spray_map.get(name)
+            if spray is None:
+                continue
+            try:
+                is_open = self._hal.get_valve(valve_id).is_open()
+            except Exception:
+                continue
+            if is_open:
+                if not spray.is_active:
+                    spray.start()
+                spray.tick()
+            else:
+                if spray.is_active:
+                    spray.stop()
 
     def _on_init(self) -> None:
         if self._equipment:
