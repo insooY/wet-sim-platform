@@ -1,0 +1,78 @@
+recipe:
+  name: "SC1 Spin Clean"
+  description: "SC1 매엽 스핀 세정 — 파티클/유기물 제거 후 DIW 린스 + IPA 건조"
+  chemistry: SC1
+  wafer_size: 300mm
+
+steps:
+  - name: "Chuck Warmup"
+    heater_setpoints:
+      - id: H1
+        temperature: 65.0
+    wait_heater:
+      - id: H1
+        tolerance: 2.0
+    duration: 0
+
+  - name: "Low Speed Spin"
+    motor_moves:
+      - id: M1
+        position: 500.0
+    duration: 5
+
+  - name: "Nozzle Swing In"
+    motor_moves:
+      - id: M2
+        position: 150.0
+    duration: 0
+
+  - name: "SC1 Dispense"
+    valves_open: [V1]
+    motor_moves:
+      - id: M1
+        position: 1500.0
+    duration: 30
+
+  - name: "SC1 High Speed"
+    valves_open: [V1]
+    motor_moves:
+      - id: M1
+        position: 2500.0
+    duration: 30
+
+  - name: "SC1 Off"
+    valves_close: [V1]
+    duration: 3
+
+  - name: "DIW Rinse"
+    valves_open: [V3]
+    motor_moves:
+      - id: M1
+        position: 2000.0
+    duration: 20
+
+  - name: "DIW Off"
+    valves_close: [V3]
+    duration: 2
+
+  - name: "IPA Dry"
+    valves_open: [V4]
+    motor_moves:
+      - id: M1
+        position: 3000.0
+    duration: 20
+
+  - name: "IPA Off"
+    valves_close: [V4]
+    duration: 2
+
+  - name: "Spin Down / Nozzle Home"
+    motor_moves:
+      - id: M1
+        position: 0.0
+      - id: M2
+        position: 0.0
+    heater_setpoints:
+      - id: H1
+        temperature: 25.0
+    duration: 0
